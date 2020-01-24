@@ -1,3 +1,15 @@
+      **************************************************************/   28732379
+      *  PROGRAM: PPP400                                           */   28732379
+      *  RELEASE: ___2379______ SERVICE REQUEST(S): ___102873____  */   28732379
+      *  NAME:______TAYAG______ MODIFICATION DATE:  ___01/15/20__  */   28732379
+      *  DESCRIPTION:                                              */   28732379
+      *  - Modify for 2020 W-4 changes.                            */   28732379
+      *  - Add new set of parameters for NRA.                      */   28732379
+      *  - Update to remove obsolete/use new fields from XFTA.     */   28732379
+      *  - Pass IRS schedule to CPLNKFED.                          */   28732379
+      *  - Pass W-4 data elements from GTN U balances 661 to 666   */   28732379
+      *    to CPLNKNET (to be used by PPNETCLC).                   */   28732379
+      **************************************************************/   28732379
       **************************************************************/   27782377
       *  PROGRAM: PPP400                                           */   27782377
       *  RELEASE: ___2377______ SERVICE REQUEST(S): ___102778____  */   27782377
@@ -2286,14 +2298,17 @@
             MOVE 99999 TO XFTA-SALARY (1 P2)                            PPP400  
             MOVE ZEROS TO XFTA-TAX (1 P2)                               PPP400  
            END-PERFORM.                                                 PPP400  
-           MOVE ZEROS TO XFTA-EXEMPTION (1).                            PPP400  
+      *****MOVE ZEROS TO XFTA-EXEMPTION (1).                            28732379
            MOVE ZEROS TO XFTA-NO-SINGLES (1).                           PPP400  
            MOVE ZEROS TO XFTA-NO-MARRIED (1).                           PPP400  
-           MOVE ZEROS TO XFTA-NO-NRALIEN (1).                           28311915
-           MOVE SPACES TO XFTA-PERIOD (1).                              PPP400  
-           MOVE XFTA-HOLD (1) TO XFTA-HOLD (2)                          PPP400  
-                                  XFTA-HOLD (3)                         PPP400  
-                                  XFTA-HOLD (4).                        PPP400  
+           MOVE ZEROS TO XFTA-NO-HEADOFH (1).                           28732379
+      *****MOVE ZEROS TO XFTA-NO-NRALIEN (1).                           28732379
+      *****MOVE SPACES TO XFTA-PERIOD (1).                              28732379
+           MOVE XFTA-HOLD (1) TO XFTA-HOLD (2).                         28732379
+      *****                                                             28732379
+      *****MOVE XFTA-HOLD (1) TO XFTA-HOLD (2)                          28732379
+      *****                       XFTA-HOLD (3)                         28732379
+      *****                       XFTA-HOLD (4).                        28732379
                                                                         PPP400  
            INITIALIZE FEDERAL-TAX-INTERFACE                             30871230
                       STATE-TAX-INTERFACE.                              30871230
@@ -2305,6 +2320,9 @@
                                    KSTE-CYC (3).                        30871230
            MOVE TAX-GTN-CYC (4) TO KFED-CYC (4)                         30871230
                                    KSTE-CYC (4).                        30871230
+      **** Pass IRS schedule to CPLNKFED                                28732379
+           MOVE '1'             TO KFED-SCHEDULE (1).                   28732379
+           MOVE '2'             TO KFED-SCHEDULE (2).                   28732379
                                                                         30871230
            CALL WS-PPFEDUTL.                                            30871230
            IF KFED-MSSG-NO NOT = SPACES                                 30871230
@@ -2324,6 +2342,10 @@
            MOVE XSP-PARAM (118)            TO KNET-MO-PARM-AMT.         15611721
            MOVE XSP-PARAM (119)            TO KNET-SM-PARM-AMT          15611721
            MOVE XSP-PARAM (120)            TO KNET-BI-PARM-AMT.         15611721
+      **** Pass new system parameters for NRA                           28732379
+           MOVE XSP-PARAM (178)            TO KNET-MO-PARM-AMT2.        28732379
+           MOVE XSP-PARAM (179)            TO KNET-SM-PARM-AMT2.        28732379
+           MOVE XSP-PARAM (180)            TO KNET-BI-PARM-AMT2.        28732379
            MOVE XPCR-CHECK-DATE            TO KNET-CHECK-DATE.          15611721
                                                                         15611721
        0016-FINAL-PAY-SAVE-PCR-INFO  SECTION.                           48761492
@@ -2874,6 +2896,7 @@
            SET KNET-DED-FULL-SW-OFF TO TRUE.                            PPP400  
            SET SKIP-GTN-SW-OFF TO TRUE.                                 PPP400  
            MOVE XPAR-ID-NO            TO KNET-EMPLOYEE-ID               12082230
+           DISPLAY 'KNET-EMPLOYEE-ID : ' KNET-EMPLOYEE-ID               28732379
            MOVE XPAR-TOTAL-GROSS      TO KNET-GROSS-TOTAL               PPP400  
                                          KNET-INTER-NET.                PPP400  
            MOVE XPAR-OASDI-GROSS      TO KNET-GROSS-OASDI.              PPP400  
@@ -4033,6 +4056,20 @@
                     IF KNET-1ST-CALL-ROUTINE-05-SW = ZERO               71641280
                         PERFORM SP-CALC-05-RTN-1240                     71641280
                     END-IF                                              71641280
+      **** Pass W-4 data elements from GTN U balances to CPLNKNET fields28732379
+                  WHEN '22'                                             28732379
+                    MOVE XDSA-BALAMT(662 XDSA-USER-P)                   28732379
+                                         TO KNET-W4-2020-FORM           28732379
+                    MOVE XDSA-BALAMT(661 XDSA-USER-P)                   28732379
+                                         TO KNET-W4-STEP2C              28732379
+                    COMPUTE KNET-W4-STEP3-AMT =                         28732379
+                    XDSA-BALAMT(663 XDSA-USER-P) +                      28732379
+                                         XDSA-BALAMT(664 XDSA-USER-P)   28732379
+                                                                        28732379
+                    MOVE XDSA-BALAMT(665 XDSA-USER-P)                   28732379
+                                         TO KNET-W4-STEP4A-AMT          28732379
+                    MOVE XDSA-BALAMT(666 XDSA-USER-P)                   28732379
+                                         TO KNET-W4-STEP4B-AMT          28732379
                   WHEN '40'                                             71641280
                     IF RET-ELIG-CODE-SFHBR-RETR                         71641280
                      COMPUTE KNET-DP-DPI-FED-AMT =                      30001947
@@ -4658,15 +4695,15 @@
       *-----> SET RESTORE SWITCH TO 'Y' FOR 2 GTNS EMPLOYEE             EFIX2282
                      MOVE 'Y'        TO CALC15-2GTNS-RESTORE-SW         EFIX2282
                   END-IF                                                14411702
-******************IF CALC15-2GTNS-UNC-DSA (2GTNS-X) > ZERO              17282282
-******************   CONTINUE                                           17282282
-******************ELSE                                                  17282282
+      ************IF CALC15-2GTNS-UNC-DSA (2GTNS-X) > ZERO              17282282
+      ************   CONTINUE                                           17282282
+      ************ELSE                                                  17282282
       *-----> NO EARNINGS FOUND AND NOT ENROLLED IN UN-COVERED GTN      14411702
       *-----> SO ENROLL IN UN-COVERED GTN                               14411702
-******************   MOVE CALC15-2GTNS-GTN-UNC (2GTNS-X) TO GTN-X       17282282
-******************   MOVE CALC15-2GTNS-COV-DSA (2GTNS-X)                17282282
-******************               TO XDSA-BALAMT (GTN-X, XDSA-GTN-P)     17282282
-******************END-IF                                                17282282
+      ************   MOVE CALC15-2GTNS-GTN-UNC (2GTNS-X) TO GTN-X       17282282
+      ************   MOVE CALC15-2GTNS-COV-DSA (2GTNS-X)                17282282
+      ************               TO XDSA-BALAMT (GTN-X, XDSA-GTN-P)     17282282
+      ************END-IF                                                17282282
                END-IF                                                   14411702
              END-IF                                                     14411702
            END-PERFORM.                                                 14411702
