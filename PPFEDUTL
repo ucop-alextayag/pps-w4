@@ -1,0 +1,160 @@
+000000**************************************************************/   28311915
+000001*  PROGRAM: PPFEDUTL                                         */   28311915
+000002*  RELEASE: ___1915______ SERVICE REQUEST(S): ____82831____  */   28311915
+000003*  NAME:_BASKAR CHITRAVEL MODIFICATION DATE:  ___03/30/10__  */   28311915
+000004*  DESCRIPTION:                                              */   28311915
+000005*  LOAD NRA RATES INTO THE EXPANDED CPWSXFTA FEDTAX TABLE    */   28311915
+000006*  AND STORE TOTAL #NRA RATE STEPS INTO THE NEW HOLD FIELD.  */   28311915
+000008**************************************************************/   28311915
+000010**************************************************************/   30871230
+000020*  PROGRAM: PPFEDUTL                                         */   30871230
+000030*  RELEASE: ___1230______ SERVICE REQUEST(S): _____3087____  */   30871230
+000040*  NAME:___SRS___________ MODIFICATION DATE:  ___03/08/99__  */   30871230
+000050*  DESCRIPTION:                                              */   30871230
+000060*  REMOVE INITIALIZATION OF FEDERAL-TAX-AREA.                */   30871230
+000070**************************************************************/   30871230
+000100**************************************************************/   36430911
+000200*  PROGRAM:  PPFEDUTL                                        */   36430911
+000300*  RELEASE # ___0911___   SERVICE REQUEST NO(S)____3643______*/   36430911
+000400*  NAME __SRS__________   MODIFICATION DATE ____06/30/94_____*/   36430911
+000500*  DESCRIPTION                                               */   36430911
+000600*  THIS IS A MODULE REPLACEMENT TO ACCESS DB2 FED TAX TABLES */   36430911
+000700**************************************************************/   36430911
+000800 IDENTIFICATION DIVISION.                                         PPFEDUTL
+000900 PROGRAM-ID. PPFEDUTL.                                            PPFEDUTL
+001000 INSTALLATION. UNIVERSITY OF CALIFORNIA.                          PPFEDUTL
+001100 DATE-COMPILED.                                                   PPFEDUTL
+001200 ENVIRONMENT DIVISION.                                            PPFEDUTL
+001300 DATA DIVISION.                                                   PPFEDUTL
+001400 WORKING-STORAGE SECTION.                                         PPFEDUTL
+001500 01  MISC.                                                        PPFEDUTL
+001600     05 IX                        PIC S9(03) COMP.                PPFEDUTL
+001700     05 MARRIED                   PIC S9(03) COMP.                PPFEDUTL
+001800     05 SINGLE                    PIC S9(03) COMP.                PPFEDUTL
+001810     05 NRALIEN                   PIC S9(03) COMP.                28311915
+001900     05 MP0548                    PIC X(05)  VALUE 'P0548'.       PPFEDUTL
+002000     05 WS-PERIOD                 PIC X      VALUE SPACE.         PPFEDUTL
+002100 01  PPDB2MSG-INTERFACE.          COPY CPLNKDB2.                  PPFEDUTL
+002200 01  FEDERAL-TAX-AREA      EXTERNAL.                              PPFEDUTL
+002300     EXEC SQL                                                     PPFEDUTL
+002400        INCLUDE CPWSXFTA                                          PPFEDUTL
+002500     END-EXEC.                                                    PPFEDUTL
+002600 01  FEDERAL-TAX-INTERFACE EXTERNAL.                              PPFEDUTL
+002700     EXEC SQL                                                     PPFEDUTL
+002800        INCLUDE CPLNKFED                                          PPFEDUTL
+002900     END-EXEC.                                                    PPFEDUTL
+003000 01  WS-FED.                                                      PPFEDUTL
+003100     EXEC SQL                                                     PPFEDUTL
+003200        INCLUDE PPPVZFED                                          PPFEDUTL
+003300     END-EXEC.                                                    PPFEDUTL
+003400     EXEC SQL                                                     PPFEDUTL
+003500        INCLUDE SQLCA                                             PPFEDUTL
+003600     END-EXEC.                                                    PPFEDUTL
+003700     EXEC SQL                                                     PPFEDUTL
+003800     DECLARE FED-ROW CURSOR FOR                                   PPFEDUTL
+003900     SELECT   FED_PERIOD,                                         PPFEDUTL
+004000              FED_MARITAL_STATUS,                                 PPFEDUTL
+004100              FED_MIN_GROSS,                                      PPFEDUTL
+004200              FED_BASE_TAX,                                       PPFEDUTL
+004300              FED_ADDITIONAL_PCT                                  PPFEDUTL
+004400     FROM     PPPVZFED_FED                                        PPFEDUTL
+004500     WHERE    FED_PERIOD = :WS-PERIOD                             PPFEDUTL
+004600     ORDER BY FED_MARITAL_STATUS,                                 PPFEDUTL
+004700              FED_MIN_GROSS                                       PPFEDUTL
+004800     END-EXEC.                                                    PPFEDUTL
+004900                                                                  PPFEDUTL
+005000 PROCEDURE DIVISION.                                              PPFEDUTL
+005100                                                                  PPFEDUTL
+005200 0000-LOAD-TAX-TABLES.                                            PPFEDUTL
+005300                                                                  PPFEDUTL
+005400     EXEC SQL                                                     PPFEDUTL
+005500        INCLUDE CPPDXE99                                          PPFEDUTL
+005600     END-EXEC.                                                    PPFEDUTL
+005700*****INITIALIZE FEDERAL-TAX-AREA.                                 30871230
+005800*****MOVE KFED-GTN-CYCLES (1) TO WS-PERIOD.                       30871230
+005900*****PERFORM 2000-OPEN-FEDTAX.                                    30871230
+006000     PERFORM VARYING IX FROM +1 BY +1                             PPFEDUTL
+006100       UNTIL KFED-GTN-CYCLES (IX) = SPACES OR IX > +4             PPFEDUTL
+006200      MOVE ZERO TO SINGLE                                         PPFEDUTL
+006300      MOVE +11  TO MARRIED                                        PPFEDUTL
+006310      MOVE +22  TO NRALIEN                                        28311915
+006400      MOVE KFED-GTN-CYCLES (IX) TO XFTA-PERIOD (IX)               PPFEDUTL
+006500                                   WS-PERIOD                      PPFEDUTL
+006510      PERFORM 2000-OPEN-FEDTAX                                    30871230
+006600      PERFORM 2100-FETCH-FEDTAX                                   PPFEDUTL
+006700      PERFORM                                                     PPFEDUTL
+006800        UNTIL SQLCODE NOT = ZERO                                  PPFEDUTL
+006810           OR NRALIEN > 33                                        28311915
+006900           OR MARRIED > 22                                        PPFEDUTL
+007000           OR SINGLE  > 11                                        PPFEDUTL
+007100       EVALUATE FED-MARITAL-STATUS                                PPFEDUTL
+007200        WHEN 'M'                                                  PPFEDUTL
+007300         ADD 1 TO XFTA-NO-MARRIED (IX)                            PPFEDUTL
+007400                  MARRIED                                         PPFEDUTL
+007500         MOVE FED-BASE-TAX TO XFTA-TAX (IX MARRIED)               PPFEDUTL
+007600         MOVE FED-MIN-GROSS TO XFTA-SALARY (IX MARRIED)           PPFEDUTL
+007700         MOVE FED-ADDITIONAL-PCT TO XFTA-PCT (IX MARRIED)         PPFEDUTL
+007800        WHEN 'S'                                                  PPFEDUTL
+007900         ADD 1 TO XFTA-NO-SINGLES (IX)                            PPFEDUTL
+008000                  SINGLE                                          PPFEDUTL
+008100         MOVE FED-MIN-GROSS TO XFTA-SALARY (IX SINGLE)            PPFEDUTL
+008200         MOVE FED-BASE-TAX TO XFTA-TAX (IX SINGLE)                PPFEDUTL
+008300         MOVE FED-ADDITIONAL-PCT TO XFTA-PCT (IX SINGLE)          PPFEDUTL
+008301        WHEN 'N'                                                  28311915
+008302         ADD 1 TO XFTA-NO-NRALIEN (IX)                            28311915
+008303                  NRALIEN                                         28311915
+008304         MOVE FED-MIN-GROSS TO XFTA-SALARY (IX NRALIEN)           28311915
+008305         MOVE FED-BASE-TAX TO XFTA-TAX (IX NRALIEN)               28311915
+008306         MOVE FED-ADDITIONAL-PCT TO XFTA-PCT (IX NRALIEN)         28311915
+008400        WHEN 'E'                                                  PPFEDUTL
+008500         MOVE FED-BASE-TAX TO XFTA-EXEMPTION (IX)                 PPFEDUTL
+008600       END-EVALUATE                                               PPFEDUTL
+008700       PERFORM 2100-FETCH-FEDTAX                                  PPFEDUTL
+008800      END-PERFORM                                                 PPFEDUTL
+008900      IF  (XFTA-NO-MARRIED (IX) > ZERO AND < 23)                  PPFEDUTL
+009000      AND (XFTA-NO-SINGLES (IX) > ZERO AND < 12)                  PPFEDUTL
+009010      AND (XFTA-NO-NRALIEN (IX) > ZERO AND < 12)                  28311915
+009100          CONTINUE                                                PPFEDUTL
+009200      ELSE                                                        PPFEDUTL
+009300          MOVE MP0548 TO KFED-MSSG-NO                             PPFEDUTL
+009400      END-IF                                                      PPFEDUTL
+009410      PERFORM 2200-CLOSE-FEDTAX                                   30871230
+009500     END-PERFORM.                                                 PPFEDUTL
+009600*****PERFORM 2200-CLOSE-FEDTAX.                                   30871230
+009700                                                                  PPFEDUTL
+009800 0100-END.                                                        PPFEDUTL
+009900                                                                  PPFEDUTL
+010000     GOBACK.                                                      PPFEDUTL
+010100                                                                  PPFEDUTL
+010200 2000-OPEN-FEDTAX.                                                PPFEDUTL
+010300                                                                  PPFEDUTL
+010400     MOVE '2000-OPEN-FED' TO DB2MSG-TAG.                          PPFEDUTL
+010500     EXEC SQL                                                     PPFEDUTL
+010600         OPEN FED-ROW                                             PPFEDUTL
+010700     END-EXEC.                                                    PPFEDUTL
+010800                                                                  PPFEDUTL
+010900 2100-FETCH-FEDTAX.                                               PPFEDUTL
+011000                                                                  PPFEDUTL
+011100     MOVE '2100-FETCH-FED' TO DB2MSG-TAG.                         PPFEDUTL
+011200     EXEC SQL                                                     PPFEDUTL
+011300         FETCH FED-ROW                                            PPFEDUTL
+011400         INTO :FED-PERIOD,                                        PPFEDUTL
+011500              :FED-MARITAL-STATUS,                                PPFEDUTL
+011600              :FED-MIN-GROSS,                                     PPFEDUTL
+011700              :FED-BASE-TAX,                                      PPFEDUTL
+011800              :FED-ADDITIONAL-PCT                                 PPFEDUTL
+011900     END-EXEC.                                                    PPFEDUTL
+012000                                                                  PPFEDUTL
+012100 2200-CLOSE-FEDTAX.                                               PPFEDUTL
+012200                                                                  PPFEDUTL
+012300     MOVE '2200-CLOSE-FED' TO DB2MSG-TAG.                         PPFEDUTL
+012400     EXEC SQL                                                     PPFEDUTL
+012500         CLOSE FED-ROW                                            PPFEDUTL
+012600     END-EXEC.                                                    PPFEDUTL
+012700                                                                  PPFEDUTL
+012800*999999-SQL-ERROR.                                                PPFEDUTL
+012900     EXEC SQL                                                     PPFEDUTL
+013000        INCLUDE CPPDXP99                                          PPFEDUTL
+013100     END-EXEC.                                                    PPFEDUTL
+013200     MOVE MP0548 TO KFED-MSSG-NO.                                 PPFEDUTL
+013300     GO TO 0100-END.                                              PPFEDUTL
